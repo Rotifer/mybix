@@ -1,6 +1,7 @@
 import os
 import sys
 import csv
+import re
 
 class VCF2TSV:
     """
@@ -31,6 +32,7 @@ class VCF2TSV:
         column_indexes_to_keep = [0, 1, 2, 3, 4, 7]
         row_start = False
         fho = open(output_file, 'wt')
+        fho.write('\t'.join(column_names) + os.linesep)
         with open(self.vcf_file_path) as fh:
             csv_reader = csv.reader(fh, delimiter='\t', quotechar='"')
             for row in csv_reader:
@@ -41,11 +43,36 @@ class VCF2TSV:
                     row_start = True
         fho.close() 
 
+    def get_info_rows(self):
+        """
+        """
+        info_rows = []
+        with open(self.vcf_file_path) as fh:
+            for row in fh:
+                if row.startswith('#CHROM'): break
+                if row.startswith('##INFO'):
+                    info_rows.append(row)
+        return info_rows
+
+    def generate_info_schema(self):
+        info_rows = self.get_info_rows()
+        regex_pat = r'[<](.+),Description="'
+        info_schema = []
+        for info_row in info_rows:
+            match = re.search(regex_pat, info_row)
+            if match:
+                matched_info = match.group(1)
+                info_schema_element = dict(entry.split("=") for entry in matched_info.split(','))
+                info_schema.append(info_schema_element)
+        return info_schema
+
 if __name__ == '__main__':
+    from pprint import pprint
     dir_path = '{}/big_files/'.format(os.environ['HOME']) 
     vcf_file_path = os.path.join(dir_path, '1000GENOMES-phase_3_1k_sample.vcf')
     header_file_path = os.path.join(dir_path, 'vcf_header.txt')
     body_file_path = os.path.join(dir_path, 'vcf_body.tsv') 
     vcf2tsv = VCF2TSV(vcf_file_path)
-    vcf2tsv.write_header_to_file(header_file_path)
-    vcf2tsv.write_body_to_file(body_file_path)
+    #vcf2tsv.write_header_to_file(header_file_path)
+    #vcf2tsv.write_body_to_file(body_file_path)
+    pprint(vcf2tsv.generate_info_schema())
