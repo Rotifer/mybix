@@ -57,13 +57,15 @@ class VCF2TSV:
     def generate_info_schema(self):
         info_rows = self.get_info_rows()
         regex_pat = r'[<](.+),Description="'
-        info_schema = []
+        info_schema = {}
         for info_row in info_rows:
             match = re.search(regex_pat, info_row)
             if match:
                 matched_info = match.group(1)
                 info_schema_element = dict(entry.split("=") for entry in matched_info.split(','))
-                info_schema.append(info_schema_element)
+                element_id = info_schema_element['ID']
+                info_schema_element.pop('ID') 
+                info_schema[element_id] = info_schema_element
         return info_schema
 
 if __name__ == '__main__':
