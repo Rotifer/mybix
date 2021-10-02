@@ -35,7 +35,8 @@ class VCF2TSV:
 
     def write_body_to_file(self, output_file):
         """Write that actual variant data rows to a TSV file.
-        No processing is done on the INFO column in this method. VCF QUAL FILTER are dropped
+        No processing is done on the INFO column in this method. 
+        VCF QUAL and FILTER columns are dropped.
         """
         column_names = ['chrom', 'position', 'variant_id', 'ref_allele', 'alt_allele', 'info']
         column_indexes_to_keep = [0, 1, 2, 3, 4, 7]
@@ -117,15 +118,42 @@ class VCF2TSV:
                 key, val = info_element.split('=')
             else:
                 key, val = info_element, 'X'
-            column_position = self.info_schema[key]['column_index']
+            try:
+                column_position = self.info_schema[key]['column_index']
+            except KeyError as ex:
+                sys.stderr.write('KEY ERROR: {}'.format(info_column_value))
             extracted_values[column_position] = val
         return extracted_values
             
+    def create_tsv_full_info(self, output_file):
+        """Create a TSV of the VCF file with the INFO broken into separate columns for each INFO ID.
+        VCF QUAL and FILTER columns are dropped. 
+        """
+        info_column_names = self.get_info_column_names_in_order()
+        column_names = ['chrom', 'position', 'variant_id', 'ref_allele', 'alt_allele']
+        column_names.extend(info_column_names)
+        column_indexes_to_keep = [0, 1, 2, 3, 4, 7]
+        row_start = False
+        fho = open(output_file, 'wt')
+        fho.write('\t'.join(column_names) + os.linesep)
+        with open(self.vcf_file_path) as fh:
+            csv_reader = csv.reader(fh, delimiter='\t', quotechar='"')
+            for row in csv_reader:
+                if row_start:
+                    columns_keep =[row[i] for i in column_indexes_to_keep]
+                    info_column = columns_keep.pop()
+                    info_column_parsed = self.parse_info_column(info_column)
+                    columns_keep.extend(info_column_parsed)
+                    columns_keep = [str(column_value or '.') for column_value in columns_keep]
+                    fho.write(('\t').join(columns_keep) + os.linesep)
+                if row[0].startswith('#CHROM'):
+                    row_start = True
+        fho.close()
 
 if __name__ == '__main__':
     from pprint import pprint
     dir_path = '{}/big_files/'.format(os.environ['HOME']) 
-    vcf_file_path = os.path.join(dir_path, '1000GENOMES-phase_3_1k_sample.vcf')
+    vcf_file_path = os.path.join(dir_path, '1000GENOMES-phase_3.vcf')
     header_file_path = os.path.join(dir_path, 'vcf_header.txt')
     body_file_path = os.path.join(dir_path, 'vcf_body.tsv') 
     vcf2tsv = VCF2TSV(vcf_file_path)
@@ -134,3 +162,5 @@ if __name__ == '__main__':
     pprint(vcf2tsv.generate_info_schema())
     pprint(vcf2tsv.parse_info_column('dbSNP_154;TSA=indel;E_Freq;E_1000G;E_TOPMed;AFR=0.4909;AMR=0.3602;EAS=0.3363;EUR=0.4056;SAS=0.4949'))
     pprint(vcf2tsv.get_info_column_names_in_order())
+    parsed_info_tsv_file_path = os.path.join(dir_path, 'parsed_vcf_info.tsv')
+    vcf2tsv.create_tsv_full_info(parsed_info_tsv_file_path)
