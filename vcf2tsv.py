@@ -3,11 +3,20 @@ import sys
 import csv
 import re
 
+"""
+VCF (Variant Call Format) version 4.0 parser. Create TSV file versions for loading into
+relational databases, DuckDB etc.
+VCF (Variant Call Format) version 4.0 specification: https://www.internationalgenome.org/wiki/Analysis/vcf4.0/
+"""
+
 class VCF2TSV:
     """
+    Create a tab-separated version of a Variant Call Format (VCF) file that can be uploaded 
+    into a database.
     """
     def __init__(self, vcf_file_path):
         """
+        Provide a full ath to a readable standard VCF file.
         """
         self.vcf_file_path = vcf_file_path
         if not os.path.exists(self.vcf_file_path):
@@ -15,8 +24,7 @@ class VCF2TSV:
         self.info_schema = self.generate_info_schema()
 
     def write_header_to_file(self, output_file):
-        """
-
+        """Write the header lines, that is, those beginning with ## to a given output file
         """
         fho = open(output_file, 'wt')
         with open(self.vcf_file_path) as fh:
@@ -26,10 +34,10 @@ class VCF2TSV:
         fho.close()
 
     def write_body_to_file(self, output_file):
+        """Write that actual variant data rows to a TSV file.
+        No processing done on the INFO column. VCF QUAL FILTER are dropped
         """
-
-        """
-        column_names = ['chrom', 'pos', 'id', 'ref', 'alt', 'info']
+        column_names = ['chrom', 'position', 'variant_id', 'ref_allele', 'alt_allele', 'info']
         column_indexes_to_keep = [0, 1, 2, 3, 4, 7]
         row_start = False
         fho = open(output_file, 'wt')
@@ -45,7 +53,9 @@ class VCF2TSV:
         fho.close() 
 
     def get_info_rows(self):
-        """
+        """Return a list containing all the header rows beginning with ##.
+        Returned list is the input for methods that extract the INFO IDs
+        and their associated values.
         """
         info_rows = []
         with open(self.vcf_file_path) as fh:
@@ -56,6 +66,9 @@ class VCF2TSV:
         return info_rows
 
     def generate_info_schema(self):
+        """Parse a list containing the indivual INFO entries to generate
+        a dictionary of dictionaries mapping INFO ID to INFO details.
+        """
         info_rows = self.get_info_rows()
         regex_pat = r'[<](.+),Description="'
         info_schema = {}
@@ -73,15 +86,25 @@ class VCF2TSV:
         return info_schema
 
     def get_info_column_names_in_order(self):
-        """
+        """Return a list of the INFO IDs ordered by the column index value
+        in the inner dictionaries.
         """
         info_names = list(self.info_schema.keys())
         info_names_in_order = sorted(info_names, 
-                                     key=lambda info_name: self.info_schema[info_name]['column_index'])
+                                     key=lambda info_name: 
+                                        self.info_schema[info_name]['column_index'])
         return info_names_in_order
 
     def parse_info_column(self, info_column_value):
-        """
+        """Given a single INFO column value, return a list of the values it contains
+        The list returned is ordered by the column index value specified in the
+        info schema. It is crucially important that each INFO value input generates
+        a list output in the same length and in the same order.
+        Assumes INFO entries are separated by semi-colons.
+        Some entries are key-value pairs, some are single value and other INFO names
+        specified in the VCF header may not be in the given input.
+        This method deals with these scenarios by assigning 'X' to keys with no values
+        and None to absent INFO IDs
         """
         info_elements = info_column_value.strip().split(';')
         key, val = None, None
