@@ -111,6 +111,10 @@ class VCF2TSV:
         and None to absent INFO IDs
         """
         info_elements = info_column_value.strip().split(';')
+        # Some INFO columns contain empty values (";;"); this causes a key error where the key
+        # '' does not exists. The following filter removes empty elements.
+        info_elements = [info_element for info_element in info_elements 
+                            if len(info_element.strip()) > 0]
         key, val = None, None
         extracted_values = [None] * len(list(self.info_schema.keys()))
         for info_element in info_elements:
@@ -118,10 +122,7 @@ class VCF2TSV:
                 key, val = info_element.split('=')
             else:
                 key, val = info_element, 'X'
-            try:
-                column_position = self.info_schema[key]['column_index']
-            except KeyError as ex:
-                sys.stderr.write('KEY ERROR: {}'.format(info_column_value))
+            column_position = self.info_schema[key]['column_index']
             extracted_values[column_position] = val
         return extracted_values
             
