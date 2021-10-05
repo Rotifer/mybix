@@ -156,7 +156,7 @@ class VCF2TSV:
                 info_column_map['flags'].append(info_element)
         return json.dumps(info_column_map)
 
-    def create_tsv_full_info(self, output_file, info_parsing_function, info_output_type):
+    def _write_parsed_vcf_output(self, output_file, info_parsing_function, info_output_type):
         """Create a TSV of the VCF file with the INFO broken into separate columns for each INFO ID.
         VCF QUAL and FILTER columns are dropped. 
         """
@@ -183,6 +183,17 @@ class VCF2TSV:
                     row_start = True
         fho.close()
 
+    def convert_vcf_to_tsv_output(self, output_file, info_output_type):
+        """
+        
+        """
+        if info_output_type == 'tab':
+            self._write_parsed_vcf_output(output_file, self.convert_info_to_columns, info_output_type)
+        elif info_output_type == 'json':
+            self._write_parsed_vcf_output(output_file, self.convert_info_to_json, info_output_type)
+        else:
+            raise ValueError('Unrecognised info_output_type: {}'.format(info_output_type))
+
 if __name__ == '__main__':
     from pprint import pprint
     dir_path = '{}/big_files/'.format(os.environ['HOME']) 
@@ -192,10 +203,11 @@ if __name__ == '__main__':
     vcf2tsv = VCF2TSV(vcf_file_path)
     #vcf2tsv.write_header_to_file(header_file_path)
     #vcf2tsv.write_body_to_file(body_file_path)
-    pprint(vcf2tsv.generate_info_schema())
-    pprint(vcf2tsv.convert_info_to_columns('dbSNP_154;TSA=indel;E_Freq;E_1000G;E_TOPMed;AFR=0.4909;AMR=0.3602;EAS=0.3363;EUR=0.4056;SAS=0.4949'))
-    pprint(vcf2tsv.get_info_column_names_in_order())
-    parsed_info_tsv_file_path = os.path.join(dir_path, 'parsed_vcf_info_1k_sample.tsv')
-    vcf2tsv.create_tsv_full_info(parsed_info_tsv_file_path, vcf2tsv.convert_info_to_json, 'json')
-    pprint(vcf2tsv.convert_info_to_json('dbSNP_154;TSA=indel;E_Freq;E_1000G;E_TOPMed;AFR=0.4909;AMR=0.3602;EAS=0.3363;EUR=0.4056;SAS=0.4949'))
-
+    #pprint(vcf2tsv.generate_info_schema())
+    #pprint(vcf2tsv.convert_info_to_columns('dbSNP_154;TSA=indel;E_Freq;E_1000G;E_TOPMed;AFR=0.4909;AMR=0.3602;EAS=0.3363;EUR=0.4056;SAS=0.4949'))
+    #pprint(vcf2tsv.get_info_column_names_in_order())
+    parsed_info_tsv_file_path_json = os.path.join(dir_path, 'parsed_vcf_info_1k_sample_json.tsv')
+    vcf2tsv.convert_vcf_to_tsv_output(parsed_info_tsv_file_path_json, 'json')
+    #pprint(vcf2tsv.convert_info_to_json('dbSNP_154;TSA=indel;E_Freq;E_1000G;E_TOPMed;AFR=0.4909;AMR=0.3602;EAS=0.3363;EUR=0.4056;SAS=0.4949'))
+    parsed_info_tsv_file_path_tabs = os.path.join(dir_path, 'parsed_vcf_info_1k_sample_tabs.tsv')
+    vcf2tsv.convert_vcf_to_tsv_output(parsed_info_tsv_file_path_tabs, 'tab')
