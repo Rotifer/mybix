@@ -2,6 +2,7 @@ import os
 import sys
 import csv
 import re
+import json
 
 """
 VCF (Variant Call Format) version 4.0 parser. Create TSV file versions for loading into
@@ -97,7 +98,7 @@ class VCF2TSV:
                                         self.info_schema[info_name]['column_index'])
         return info_names_in_order
 
-    def parse_info_column(self, info_column_value):
+    def convert_info_to_columns(self, info_column_value):
         """Given a single INFO column value, return a list of the values it contains
         The list returned is ordered by the column index value specified in the
         info schema. It is crucially important that each INFO value input generates
@@ -124,15 +125,25 @@ class VCF2TSV:
                 key, val = info_element, 'X'
             column_position = self.info_schema[key]['column_index']
             extracted_values[column_position] = val
-        return extracted_values
-            
-    def create_tsv_full_info(self, output_file):
+        return '\t'.join(extracted_values)
+
+    def get_column_names_for_info_output_type(self, info_output_type):
+        column_names = ['chrom', 'position', 'variant_id', 'ref_allele', 'alt_allele']
+        if info_output_type == 'tab':
+            info_column_names = self.get_info_column_names_in_order()
+            column_names.extend(info_column_names)
+            return column_names
+        elif info_output_type == 'json':
+            column_names.append('info_json')
+            return column_names
+        else:
+            raise ValueError('Expect value for info_output_type is"tab" or "json"')
+
+    def create_tsv_full_info(self, output_file, info_parsing_function, info_output_type):
         """Create a TSV of the VCF file with the INFO broken into separate columns for each INFO ID.
         VCF QUAL and FILTER columns are dropped. 
         """
-        info_column_names = self.get_info_column_names_in_order()
-        column_names = ['chrom', 'position', 'variant_id', 'ref_allele', 'alt_allele']
-        column_names.extend(info_column_names)
+        column_names = self.get_column_names_for_info_output_type(info_output_type)
         column_indexes_to_keep = [0, 1, 2, 3, 4, 7]
         row_start = False
         fho = open(output_file, 'wt')
@@ -143,18 +154,35 @@ class VCF2TSV:
                 if row_start:
                     columns_keep =[row[i] for i in column_indexes_to_keep]
                     info_column = columns_keep.pop()
-                    info_column_parsed = self.parse_info_column(info_column)
-                    columns_keep.extend(info_column_parsed)
+                    info_column_parsed = info_parsing_function(info_column)
+                    columns_keep.append(info_column_parsed)
                     columns_keep = [str(column_value or '.') for column_value in columns_keep]
                     fho.write(('\t').join(columns_keep) + os.linesep)
                 if row[0].startswith('#CHROM'):
                     row_start = True
         fho.close()
 
+    def convert_info_to_json(self, info_column_value):
+        """
+        
+        """
+        info_column_map = dict(flags = [])
+        info_elements = info_column_value.strip().split(';')
+        info_elements = [info_element for info_element in info_elements 
+                            if len(info_element.strip()) > 0]
+        key, val = None, None
+        for info_element in info_elements:
+            if '=' in info_element:
+                key, val = info_element.split('=')
+                info_column_map[key] = val
+            else:
+                info_column_map['flags'].append(info_element)
+        return json.dumps(info_column_map)
+
 if __name__ == '__main__':
     from pprint import pprint
     dir_path = '{}/big_files/'.format(os.environ['HOME']) 
-    vcf_file_path = os.path.join(dir_path, '1000GENOMES-phase_3.vcf')
+    vcf_file_path = os.path.join(dir_path, '1000GENOMES-phase_3_1k_sample.vcf')
     header_file_path = os.path.join(dir_path, 'vcf_header.txt')
     body_file_path = os.path.join(dir_path, 'vcf_body.tsv') 
     vcf2tsv = VCF2TSV(vcf_file_path)
@@ -163,5 +191,7 @@ if __name__ == '__main__':
     pprint(vcf2tsv.generate_info_schema())
     pprint(vcf2tsv.parse_info_column('dbSNP_154;TSA=indel;E_Freq;E_1000G;E_TOPMed;AFR=0.4909;AMR=0.3602;EAS=0.3363;EUR=0.4056;SAS=0.4949'))
     pprint(vcf2tsv.get_info_column_names_in_order())
-    parsed_info_tsv_file_path = os.path.join(dir_path, 'parsed_vcf_info.tsv')
-    vcf2tsv.create_tsv_full_info(parsed_info_tsv_file_path)
+    parsed_info_tsv_file_path = os.path.join(dir_path, 'parsed_vcf_info_1k_sample.tsv')
+    vcf2tsv.create_tsv_full_info(parsed_info_tsv_file_path, vcf2tsv.convert_info_to_columns, 'tab')
+    pprint(vcf2tsv.convert_info_to_json('dbSNP_154;TSA=indel;E_Freq;E_1000G;E_TOPMed;AFR=0.4909;AMR=0.3602;EAS=0.3363;EUR=0.4056;SAS=0.4949'))
+
