@@ -125,7 +125,7 @@ class VCF2TSV:
                 key, val = info_element, 'X'
             column_position = self.info_schema[key]['column_index']
             extracted_values[column_position] = val
-        return '\t'.join(extracted_values)
+        return extracted_values
 
     def get_column_names_for_info_output_type(self, info_output_type):
         column_names = ['chrom', 'position', 'variant_id', 'ref_allele', 'alt_allele']
@@ -138,29 +138,6 @@ class VCF2TSV:
             return column_names
         else:
             raise ValueError('Expect value for info_output_type is"tab" or "json"')
-
-    def create_tsv_full_info(self, output_file, info_parsing_function, info_output_type):
-        """Create a TSV of the VCF file with the INFO broken into separate columns for each INFO ID.
-        VCF QUAL and FILTER columns are dropped. 
-        """
-        column_names = self.get_column_names_for_info_output_type(info_output_type)
-        column_indexes_to_keep = [0, 1, 2, 3, 4, 7]
-        row_start = False
-        fho = open(output_file, 'wt')
-        fho.write('\t'.join(column_names) + os.linesep)
-        with open(self.vcf_file_path) as fh:
-            csv_reader = csv.reader(fh, delimiter='\t', quotechar='"')
-            for row in csv_reader:
-                if row_start:
-                    columns_keep =[row[i] for i in column_indexes_to_keep]
-                    info_column = columns_keep.pop()
-                    info_column_parsed = info_parsing_function(info_column)
-                    columns_keep.append(info_column_parsed)
-                    columns_keep = [str(column_value or '.') for column_value in columns_keep]
-                    fho.write(('\t').join(columns_keep) + os.linesep)
-                if row[0].startswith('#CHROM'):
-                    row_start = True
-        fho.close()
 
     def convert_info_to_json(self, info_column_value):
         """
@@ -179,6 +156,33 @@ class VCF2TSV:
                 info_column_map['flags'].append(info_element)
         return json.dumps(info_column_map)
 
+    def create_tsv_full_info(self, output_file, info_parsing_function, info_output_type):
+        """Create a TSV of the VCF file with the INFO broken into separate columns for each INFO ID.
+        VCF QUAL and FILTER columns are dropped. 
+        """
+        column_names = self.get_column_names_for_info_output_type(info_output_type)
+        column_indexes_to_keep = [0, 1, 2, 3, 4, 7]
+        row_start = False
+        fho = open(output_file, 'wt')
+        fho.write('\t'.join(column_names) + os.linesep)
+        with open(self.vcf_file_path) as fh:
+            csv_reader = csv.reader(fh, delimiter='\t', quotechar='"')
+            for row in csv_reader:
+                if row_start:
+                    columns_keep =[row[i] for i in column_indexes_to_keep]
+                    info_column = columns_keep.pop()
+                    info_column_parsed = info_parsing_function(info_column)
+                    # Explain this!
+                    if isinstance(info_column_parsed, list):
+                        columns_keep.extend(info_column_parsed)
+                        columns_keep = [str(column_value or '.') for column_value in columns_keep]
+                    else:
+                        columns_keep.append(info_column_parsed)
+                    fho.write(('\t').join(columns_keep) + os.linesep)
+                if row[0].startswith('#CHROM'):
+                    row_start = True
+        fho.close()
+
 if __name__ == '__main__':
     from pprint import pprint
     dir_path = '{}/big_files/'.format(os.environ['HOME']) 
@@ -189,9 +193,9 @@ if __name__ == '__main__':
     #vcf2tsv.write_header_to_file(header_file_path)
     #vcf2tsv.write_body_to_file(body_file_path)
     pprint(vcf2tsv.generate_info_schema())
-    pprint(vcf2tsv.parse_info_column('dbSNP_154;TSA=indel;E_Freq;E_1000G;E_TOPMed;AFR=0.4909;AMR=0.3602;EAS=0.3363;EUR=0.4056;SAS=0.4949'))
+    pprint(vcf2tsv.convert_info_to_columns('dbSNP_154;TSA=indel;E_Freq;E_1000G;E_TOPMed;AFR=0.4909;AMR=0.3602;EAS=0.3363;EUR=0.4056;SAS=0.4949'))
     pprint(vcf2tsv.get_info_column_names_in_order())
     parsed_info_tsv_file_path = os.path.join(dir_path, 'parsed_vcf_info_1k_sample.tsv')
-    vcf2tsv.create_tsv_full_info(parsed_info_tsv_file_path, vcf2tsv.convert_info_to_columns, 'tab')
+    vcf2tsv.create_tsv_full_info(parsed_info_tsv_file_path, vcf2tsv.convert_info_to_json, 'json')
     pprint(vcf2tsv.convert_info_to_json('dbSNP_154;TSA=indel;E_Freq;E_1000G;E_TOPMed;AFR=0.4909;AMR=0.3602;EAS=0.3363;EUR=0.4056;SAS=0.4949'))
 
