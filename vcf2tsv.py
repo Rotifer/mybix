@@ -128,6 +128,11 @@ class VCF2TSV:
         return extracted_values
 
     def get_column_names_for_info_output_type(self, info_output_type):
+        """Return a list of column names for output files.
+        The info_output_type paramater can be either tab for when the output
+        type file splits the INFO entries into separate columns or json when
+        INFO is converted into a single-column JSON format.
+        """
         column_names = ['chrom', 'position', 'variant_id', 'ref_allele', 'alt_allele']
         if info_output_type == 'tab':
             info_column_names = self.get_info_column_names_in_order()
@@ -140,8 +145,9 @@ class VCF2TSV:
             raise ValueError('Expect value for info_output_type is"tab" or "json"')
 
     def convert_info_to_json(self, info_column_value):
-        """
-        
+        """Converts the given INFO input into JSON where INFO elements with key=value
+        format are reresented as dictionary keys mapped to values and flags, that is entries
+        not assigned by =, are appended to a list called 'flags'.
         """
         info_column_map = dict(flags = [])
         info_elements = info_column_value.strip().split(';')
@@ -157,7 +163,10 @@ class VCF2TSV:
         return json.dumps(info_column_map)
 
     def _write_parsed_vcf_output(self, output_file, info_parsing_function, info_output_type):
-        """Create a TSV of the VCF file with the INFO broken into separate columns for each INFO ID.
+        """Create a TSV of the VCF file with the INFO either broken into separate columns 
+        for each INFO ID or with INFO converted into a single JSON string column. The INFO
+        output format depends on the passed in method reference value and the value 
+        of the 'info_output_type' argument
         VCF QUAL and FILTER columns are dropped. 
         """
         column_names = self.get_column_names_for_info_output_type(info_output_type)
@@ -172,7 +181,9 @@ class VCF2TSV:
                     columns_keep =[row[i] for i in column_indexes_to_keep]
                     info_column = columns_keep.pop()
                     info_column_parsed = info_parsing_function(info_column)
-                    # Explain this!
+                    # This check is used to determine which of list methods 'extend' or 'append'
+                    #  is appropriate for adding the output from 'info_parsing_function' to list
+                    # containing the other columns of the VCF row. 
                     if isinstance(info_column_parsed, list):
                         columns_keep.extend(info_column_parsed)
                         columns_keep = [str(column_value or '.') for column_value in columns_keep]
@@ -184,8 +195,8 @@ class VCF2TSV:
         fho.close()
 
     def convert_vcf_to_tsv_output(self, output_file, info_output_type):
-        """
-        
+        """ Wraps the calls to the parsing methods for generating file output.
+        The 'info_output_type' parameter determines which INFO parsing method is called.
         """
         if info_output_type == 'tab':
             self._write_parsed_vcf_output(output_file, self.convert_info_to_columns, info_output_type)
@@ -197,7 +208,7 @@ class VCF2TSV:
 if __name__ == '__main__':
     from pprint import pprint
     dir_path = '{}/big_files/'.format(os.environ['HOME']) 
-    vcf_file_path = os.path.join(dir_path, '1000GENOMES-phase_3_1k_sample.vcf')
+    vcf_file_path = os.path.join(dir_path, '1000GENOMES-phase_3.vcf')
     header_file_path = os.path.join(dir_path, 'vcf_header.txt')
     body_file_path = os.path.join(dir_path, 'vcf_body.tsv') 
     vcf2tsv = VCF2TSV(vcf_file_path)
@@ -206,8 +217,8 @@ if __name__ == '__main__':
     #pprint(vcf2tsv.generate_info_schema())
     #pprint(vcf2tsv.convert_info_to_columns('dbSNP_154;TSA=indel;E_Freq;E_1000G;E_TOPMed;AFR=0.4909;AMR=0.3602;EAS=0.3363;EUR=0.4056;SAS=0.4949'))
     #pprint(vcf2tsv.get_info_column_names_in_order())
-    parsed_info_tsv_file_path_json = os.path.join(dir_path, 'parsed_vcf_info_1k_sample_json.tsv')
+    parsed_info_tsv_file_path_json = os.path.join(dir_path, 'parsed_vcf_info_json.tsv')
     vcf2tsv.convert_vcf_to_tsv_output(parsed_info_tsv_file_path_json, 'json')
     #pprint(vcf2tsv.convert_info_to_json('dbSNP_154;TSA=indel;E_Freq;E_1000G;E_TOPMed;AFR=0.4909;AMR=0.3602;EAS=0.3363;EUR=0.4056;SAS=0.4949'))
-    parsed_info_tsv_file_path_tabs = os.path.join(dir_path, 'parsed_vcf_info_1k_sample_tabs.tsv')
-    vcf2tsv.convert_vcf_to_tsv_output(parsed_info_tsv_file_path_tabs, 'tab')
+    #parsed_info_tsv_file_path_tabs = os.path.join(dir_path, 'parsed_vcf_info_1k_sample_tabs.tsv')
+    #vcf2tsv.convert_vcf_to_tsv_output(parsed_info_tsv_file_path_tabs, 'tab')
