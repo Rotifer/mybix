@@ -97,6 +97,6 @@ class VCFToFiles:
 if __name__ == '__main__':
     from pprint import pprint
     dir_path = '{}/big_files/'.format(os.environ['HOME']) 
-    vcf_file_path = os.path.join(dir_path, '1000GENOMES-phase_3_1k_sample.vcf')
+    vcf_file_path = os.path.join(dir_path, '1000GENOMES-phase_3.vcf')
     vcf2files = VCFToFiles(vcf_file_path, dir_path)
     vcf2files.write_variant_rows_to_files()
