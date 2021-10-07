@@ -12,11 +12,11 @@ INSERT INTO info_key_num_val(variant_id, info_key, info_num_val)
 SELECT
   variant_id,
   info_key, 
-  info_val
+  info_str_val
 FROM
-  info_key_val
+  info_key_str_val
 WHERE
-  LENGTH(REPLACE(REPLACE(TRIM(info_val), '0', ''), '.', '')) = 0;
+  LENGTH(REPLACE(REPLACE(TRIM(info_str_val), '0', ''), '.', '')) = 0;
 
 -- Numeric non-zero numbers can be identified by multiplying them by one.
 -- Text values that contain characters other than digits and decimal points
@@ -25,18 +25,18 @@ INSERT INTO info_key_num_val(variant_id, info_key, info_num_val)
 SELECT
   variant_id,
   info_key, 
-  info_val
+  info_str_val
 FROM
-  info_key_val
+  info_key_str_val
 WHERE
-  info_val * 1 <> 0;
+  info_str_val * 1 <> 0;
 
 -- Remove all rows identified in the earlier queries as being numeric
 DELETE 
 FROM 
-  info_key_val ikv      
+  info_key_str_val     
 WHERE EXISTS (SELECT *
               FROM
-                info_key_num_val iknv  
+                info_key_num_val
               WHERE
-                iknv.variant_id = ikv.variant_id)
+                info_key_num_val.variant_id = info_key_str_val.variant_id);

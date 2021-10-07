@@ -11,7 +11,10 @@
 # - Set headers on
 # - Execute an external SQL DDL script to create the tables
 # - Three import statements import the files into the tables just created
+# - Split the INFO key-value data into string and numeric by executing an external SQL script
 # - Create the indexes
+# - Run the VACUUM command to ensure that the database is cleaned up after splitting the info data when a large DELETE
+#     of duplicate data is performed.
 # Examle invocation:  ~/mybix/files2sqlite.sh sample_1k_vcf.db 1000GENOMES-phase_3_1k_sample_variant_details.txt 1000GENOMES-phase_3_1k_sample_info_keys_vals.txt 1000GENOMES-phase_3_1k_sample_info_flags.txt
 
 if [ "$#" -ne 4 ]; then
@@ -25,6 +28,7 @@ FILE_INFO_KEY_VAL=$3
 FILE_INFO_FLAG=$4
 SQL_DDL_FILE=$HOME/mybix/vcf_ddl.sql
 SQL_INDEX_FILE=$HOME/mybix/indexes.sql
+SQL_INFO_NUM_MOVE_FILE=$HOME/mybix/info_numeric_value_move.sql
 # Warning: Removes SQLite DB if it already exists!
 [ ! -e $SQLITE_DB_NAME ] || rm $SQLITE_DB_NAME
 
@@ -37,9 +41,11 @@ pragma mmap_size = 30000000000;
 .headers on
 .read $SQL_DDL_FILE
 .import $FILE_VARIANT_DETAILS variant_detail
-.import $FILE_INFO_KEY_VAL info_key_val
+.import $FILE_INFO_KEY_VAL info_key_str_val
 .import $FILE_INFO_FLAG info_flag
+.read $SQL_INFO_NUM_MOVE_FILE 
 .read $SQL_INDEX_FILE
 .quit
+VACUUM;
 EOF
 

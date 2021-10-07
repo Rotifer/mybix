@@ -6,7 +6,7 @@ CREATE TABLE info_key_str_val(
 CREATE TABLE info_key_num_val(
     variant_id TEXT,
     info_key TEXT,
-    info_num_val TEXT
+    info_num_val REAL 
 );
 CREATE TABLE info_flag(
   variant_id TEXT,
