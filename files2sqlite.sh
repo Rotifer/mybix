@@ -29,6 +29,10 @@ SQL_INDEX_FILE=$HOME/mybix/indexes.sql
 [ ! -e $SQLITE_DB_NAME ] || rm $SQLITE_DB_NAME
 
 sqlite3 $SQLITE_DB_NAME <<EOF
+pragma journal_mode = WAL;
+pragma synchronous = normal;
+pragma temp_store = memory;
+pragma mmap_size = 30000000000;
 .mode tabs
 .headers on
 .read $SQL_DDL_FILE
