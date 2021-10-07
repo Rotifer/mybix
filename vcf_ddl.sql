@@ -1,7 +1,12 @@
-CREATE TABLE info_key_val(
+CREATE TABLE info_key_str_val(
   variant_id TEXT,
   info_key TEXT,
-  info_val TEXT
+  info_str_val TEXT
+);
+CREATE TABLE info_key_num_val(
+    variant_id TEXT,
+    info_key TEXT,
+    info_num_val TEXT
 );
 CREATE TABLE info_flag(
   variant_id TEXT,
