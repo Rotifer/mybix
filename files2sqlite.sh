@@ -6,6 +6,7 @@
 # 2., 3., and 4. The names of the file contaning the variant detals, the the INFO key-val pairs 
 #   and the INFO flags
 # Warning: Removes the SQLite file of that name if it already exists!
+# Assumes the SQL scripts it uses are in the dame directory as this shell script
 # Uses a HEREDOC to execute a series of SQLite commands to:
 # - Set the mode to tabs (assuming the input files are tab-delimited!)
 # - Set headers on
@@ -17,6 +18,10 @@
 #     of duplicate data is performed.
 # Examle invocation:  ~/mybix/files2sqlite.sh sample_1k_vcf.db 1000GENOMES-phase_3_1k_sample_variant_details.txt 1000GENOMES-phase_3_1k_sample_info_keys_vals.txt 1000GENOMES-phase_3_1k_sample_info_flags.txt
 
+# Set the directory to the one where this script is located. Used to read in SQL scripts.
+SCRIPT_DIR=$(dirname "$0")
+
+# Ensure the correct number of arguments is passed to the script
 if [ "$#" -ne 4 ]; then
     echo "Error! Expected two arguments got $# Exiting!"
     exit 1
@@ -26,12 +31,12 @@ SQLITE_DB_NAME=$1
 FILE_VARIANT_DETAILS=$2
 FILE_INFO_KEY_VAL=$3
 FILE_INFO_FLAG=$4
-SQL_DDL_FILE=$HOME/mybix/vcf_ddl.sql
-SQL_INDEX_FILE=$HOME/mybix/indexes.sql
-SQL_INFO_NUM_MOVE_FILE=$HOME/mybix/info_numeric_value_move.sql
+SQL_DDL_FILE=$SCRIPT_DIR/vcf_ddl.sql
+SQL_INDEX_FILE=$SCRIPT_DIR/indexes.sql
+SQL_INFO_NUM_MOVE_FILE=$SCRIPT_DIR/info_numeric_value_move.sql
 # Warning: Removes SQLite DB if it already exists!
 [ ! -e $SQLITE_DB_NAME ] || rm $SQLITE_DB_NAME
-
+# Execute SQLite commands
 sqlite3 $SQLITE_DB_NAME <<EOF
 pragma journal_mode = WAL;
 pragma synchronous = normal;
