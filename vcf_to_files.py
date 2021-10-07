@@ -59,12 +59,18 @@ class VCFToFiles:
         info_column_index = 7
         variant_id_index = 2
         variant_id, info_value = row[variant_id_index], row[info_column_index]
-        info_pairs = [info_pair.replace('=', self.column_separator)
-                        for info_pair in info_value.split(';') 
+        info_pairs = [info_pair.split('=') for info_pair 
+                        in info_value.split(';') 
                             if '=' in info_pair]
-        info_out_values = [self.column_separator.join([variant_id, info_pair])
-                            for info_pair in info_pairs]
-        return os.linesep.join(info_out_values) + os.linesep
+        info_lines = []
+        for info_pair in info_pairs:
+            info_line_elements = [variant_id, info_pair[0], info_pair[1]]
+            if info_pair[1].replace('.', '').isdigit():
+                info_line_elements.append('num')
+            else:
+                info_line_elements.append('str') 
+            info_lines.append(self.column_separator.join(info_line_elements))
+        return os.linesep.join(info_lines) + os.linesep
 
     def _make_info_flags(self, row):
         """Given a VCF data row, split on ';' and extract the INFO column and variant ID.

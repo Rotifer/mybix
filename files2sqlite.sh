@@ -41,11 +41,12 @@ pragma mmap_size = 30000000000;
 .headers on
 .read $SQL_DDL_FILE
 .import $FILE_VARIANT_DETAILS variant_detail
-.import $FILE_INFO_KEY_VAL info_key_str_val
+.import $FILE_INFO_KEY_VAL info_key_val
 .import $FILE_INFO_FLAG info_flag
 .read $SQL_INFO_NUM_MOVE_FILE 
 .read $SQL_INDEX_FILE
-.quit
+DROP TABLE info_key_val;
 VACUUM;
+.quit
 EOF
 
