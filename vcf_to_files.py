@@ -1,21 +1,23 @@
 import os
 import csv
 """
-Decompose a VCF file to a set of files for database upload.
+Create a set of files from a VCF that can be loaded into a relational database
+and that are designed to be optimally queryable with SQL.
 """
 
 class VCFToFiles:
+    """Decompose a VCF file to a set of files for database upload.
+    """
     def __init__(self, vcf_file_path, output_dir, column_separator='\t'):
-        """Instantiate with a path to a readable VCF file"""
+        """Instantiate with a path to a readable VCF file, a directory path to where files
+        are written and an optional column separator with tab as default."""
         self.vcf_file_path = vcf_file_path
         self.output_dir = output_dir
         self.column_separator = column_separator
         assert os.path.isfile(vcf_file_path) and os.access(vcf_file_path, os.R_OK), \
             "File {} doesn't exist or isn't readable".format(vcf_file_path)
-        #self.vcf_dirname = os.path.dirname(vcf_file_path)
         self.vcf_basename = os.path.basename(vcf_file_path)
         self.vcf_name_minus_ext = os.path.splitext(self.vcf_basename)[0]
-        #self.output_file_type_name_map = {"header": os.path.join(self.vcf_dirname, )}
 
     def write_header_file(self):
         """Write the header lines, that is, those beginning with ## to a given output file.
@@ -30,7 +32,9 @@ class VCFToFiles:
         fho.close()
 
     def _make_output_file_names_map(self):
-        """"""
+        """Return a dictionary mapping shorthand keys to full paths
+        for each of the generated oututput files.
+        """
         name_base = os.path.join(self.output_dir, self.vcf_name_minus_ext)
         output_file_names_map = {
             'header': name_base + '_header.txt',
@@ -41,13 +45,16 @@ class VCFToFiles:
         return output_file_names_map
 
     def _make_variant_details(self, row):
-        """"""
+        """Given a VCF data row, return a string of column elements containing the chromosome,
+        position, variant ID and ref and alt alleles with a new line appended."""
         columns_to_keep = [0, 1, 2, 3, 4]
         variant_detail_row = [row[i] for i in columns_to_keep]
         return self.column_separator.join(variant_detail_row) + os.linesep
 
     def _make_info_keys_vals(self, row):
-        """"""
+        """Given a VCF data row, split on ';' and extract the INFO column and variant ID.
+        Return a multi-line string containing three columns representing the variant ID
+        and one column each for the INFO elements on each side of the = sign."""
         info_column_index = 7
         variant_id_index = 2
         variant_id, info_value = row[variant_id_index], row[info_column_index]
@@ -59,7 +66,8 @@ class VCFToFiles:
         return os.linesep.join(info_out_values) + os.linesep
 
     def _make_info_flags(self, row):
-        """"""
+        """Given a VCF data row, split on ';' and extract the INFO column and variant ID.
+        Return a multi-line string containing two columns, the variant ID and the INFO flag values."""
         info_column_index = 7
         variant_id_index = 2
         variant_id, info_value = row[variant_id_index], row[info_column_index]
@@ -69,7 +77,10 @@ class VCFToFiles:
         return os.linesep.join(info_flags) + os.linesep
 
     def write_variant_rows_to_files(self):
-        """"""
+        """This is the method to be called by clients to generate the output files from the input VCF.
+        Reads the VCF file and uses other methods to extract and format the information
+        that it then writes to a set of files.
+        TODO: Add header processing and re-factor to remove the file opening and header line writing."""
         output_file_names_map = self._make_output_file_names_map()
         fh_vd = open(output_file_names_map['variant_details'], 'wt')
         fh_vd.write(self.column_separator.join(['chromosome', 'position', 'variant_id', 'ref_allele', 'alt_allele']) + os.linesep)
