@@ -84,11 +84,8 @@ class VCFToFiles:
         TODO: Re-factor to remove the file opening and header line writing to a new method."""
         output_file_names_map = self._make_output_file_names_map()
         fh_vd = open(output_file_names_map['variant_details'], 'wt')
-        fh_vd.write(self.column_separator.join(['chromosome', 'position', 'variant_id', 'ref_allele', 'alt_allele']) + os.linesep)
         fh_ikv = open(output_file_names_map['info_keys_vals'], 'wt')
-        fh_ikv.write(self.column_separator.join(['variant_id', 'info_key', 'info_val']) + os.linesep)
         fh_if = open(output_file_names_map['info_flags'], 'wt')
-        fh_if.write(self.column_separator.join(['variant_id', 'info_flag']) + os.linesep)
         row_start = False
         with open(self.vcf_file_path) as fh:
             csv_reader = csv.reader(fh, delimiter='\t')
