@@ -81,7 +81,7 @@ class VCFToFiles:
         """This is the method to be called by clients to generate the output files from the input VCF.
         Reads the VCF file and uses other methods to extract and format the information
         that it then writes to a set of files.
-        TODO: Add header processing and re-factor to remove the file opening and header line writing."""
+        TODO: Re-factor to remove the file opening and header line writing to a new method."""
         output_file_names_map = self._make_output_file_names_map()
         fh_vd = open(output_file_names_map['variant_details'], 'wt')
         fh_vd.write(self.column_separator.join(['chromosome', 'position', 'variant_id', 'ref_allele', 'alt_allele']) + os.linesep)
