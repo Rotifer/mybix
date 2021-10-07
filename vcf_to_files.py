@@ -3,6 +3,7 @@ import csv
 """
 Create a set of files from a VCF that can be loaded into a relational database
 and that are designed to be optimally queryable with SQL.
+TODO: QUAL and FILTER not yet processed. Header rows need to be handled better.
 """
 
 class VCFToFiles:
