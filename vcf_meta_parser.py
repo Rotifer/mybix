@@ -41,15 +41,16 @@ class VCFMetaParser:
             info_maps.append(info_map)
         return info_maps
 
-    def convert_info_maps_to_table(self):
-        """"""
+    def create_info_dict_list(self):
+        """Creates a list of dictionaries where each dictionary maps the INFO property names to their values.
+        See link: https://stackoverflow.com/questions/37489245/transposing-pivoting-a-dict-of-lists-in-python"""
         info_maps = self.create_info_maps()
         info_table_column = {}
         for info_property in self.info_properties:
             info_table_column[info_property] = []
             for info_map in info_maps:
                 info_table_column[info_property].append(info_map[info_property])
-        return info_table_column
+        return [dict(zip(info_table_column, col)) for col in zip(*info_table_column.values())]
 
 if __name__ == '__main__':
     from pprint import pprint
@@ -57,5 +58,6 @@ if __name__ == '__main__':
     vcf_file_path = os.path.join(dir_path, 'UKB_WGS_graphtyper_SVs_150k_sites.vcf')
     vcf_meta_parser = VCFMetaParser(vcf_file_path, dir_path)
     #pprint(vcf_meta_parser.get_metadata_lines())
-    info_table = vcf_meta_parser.convert_info_maps_to_table()
-    pprint(info_table)
+    pprint(vcf_meta_parser.create_info_dict_list())
+            
+
