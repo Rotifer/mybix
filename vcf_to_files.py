@@ -3,7 +3,9 @@ import csv
 """
 Create a set of files from a VCF that can be loaded into a relational database
 and that are designed to be optimally queryable with SQL.
-TODO: QUAL and FILTER not yet processed. Header rows need to be handled better.
+TODO: 
+- QUAL and FILTER not yet processed. Header rows need to be handled better.
+- Separate class needed for the header
 """
 
 class VCFToFiles:
@@ -111,7 +113,8 @@ class VCFToFiles:
 
 if __name__ == '__main__':
     from pprint import pprint
+    # Full 1000GENOMES-phase3.vcf takes 25-30 minutes
     dir_path = '{}/big_files/'.format(os.environ['HOME']) 
-    vcf_file_path = os.path.join(dir_path, '1000GENOMES-phase_3_chr6.vcf')
+    vcf_file_path = os.path.join(dir_path, 'UKB_WGS_graphtyper_SVs_150k_sites.vcf')
     vcf2files = VCFToFiles(vcf_file_path, dir_path)
     vcf2files.write_variant_rows_to_files()
