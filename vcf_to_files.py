@@ -73,17 +73,24 @@ class VCFToFiles:
                 info_line_elements.append('str') 
             info_lines.append(self.column_separator.join(info_line_elements))
         return os.linesep.join(info_lines) + os.linesep
-
+    
     def _make_info_flags(self, row):
         """Given a VCF data row, split on ';' and extract the INFO column and variant ID.
-        Return a multi-line string containing two columns, the variant ID and the INFO flag values."""
+        Note: Some VCFs contain INFO elements with no flags, that is no ;FLAG; entries.
+        If the INFO column contains flags:
+            Return a multi-line string containing two columns, the variant ID and the INFO 
+            flag values.
+        Else: Return an empty string"""
         info_column_index = 7
         variant_id_index = 2
         variant_id, info_value = row[variant_id_index], row[info_column_index]
-        info_flags = [self.column_separator.join([variant_id, info_flag]) 
-                        for info_flag in info_value.split(';')
-                            if '=' not in info_flag and info_flag != '']
-        return os.linesep.join(info_flags) + os.linesep
+        info_flags = [info_flag for info_flag in info_value.split(';') 
+                        if '=' not in info_flag and info_flag != '']
+        if info_flags:
+            info_flags_variants = [self.column_separator.join([variant_id, info_flag])
+                                    for info_flag in info_flags]
+            return os.linesep.join(info_flags_variants) + os.linesep
+        return ''
 
     def write_variant_rows_to_files(self):
         """This is the method to be called by clients to generate the output files from the input VCF.
@@ -104,7 +111,9 @@ class VCFToFiles:
                     ikv_rows = self._make_info_keys_vals(row)
                     fh_ikv.write(ikv_rows)
                     if_row = self._make_info_flags(row)
-                    fh_if.write(if_row)
+                    # Do not print to the info flags file if there are no flags
+                    if if_row:
+                        fh_if.write(if_row)
                 if row[0].startswith('#CHROM'):
                     row_start = True
         fh_vd.close()
