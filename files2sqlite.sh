@@ -23,7 +23,7 @@ SCRIPT_DIR=$(dirname "$0")
 
 # Ensure the correct number of arguments is passed to the script
 if [ "$#" -ne 4 ]; then
-    echo "Error! Expected two arguments got $# Exiting!"
+    echo "Error! Expected four arguments got $# Exiting!"
     exit 1
 
 fi
