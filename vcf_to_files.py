@@ -124,6 +124,6 @@ if __name__ == '__main__':
     from pprint import pprint
     # Full 1000GENOMES-phase3.vcf takes 25-30 minutes
     dir_path = '{}/big_files/'.format(os.environ['HOME']) 
-    vcf_file_path = os.path.join(dir_path, 'UKB_WGS_graphtyper_SVs_150k_sites.vcf')
+    vcf_file_path = os.path.join(dir_path, '1857247-T02_24044_0_0.dragen.repeats.vcf')
     vcf2files = VCFToFiles(vcf_file_path, dir_path)
     vcf2files.write_variant_rows_to_files()
