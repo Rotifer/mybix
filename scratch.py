@@ -1,5 +1,6 @@
 # File for checking things and developing prototypes
 import os
+import sys
 def parse_vcf_info(vcf_row):
     column_separator = '\t'
     row = vcf_row.split(column_separator)
@@ -21,3 +22,4 @@ def parse_vcf_info(vcf_row):
 
 vcf_row = '1	10617	rs376342519	CGCCGTTGCAAAGGCGCGCCGC	C	.	.	dbSNP_154;TSA=indel;E_Freq;E_1000G;E_gnomAD;AFR=0.9894;AMR=0.9957;EAS=0.9911;EUR=0.994;SAS=0.9969'
 print(parse_vcf_info(vcf_row))
+print(sys.executable)
